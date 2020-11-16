@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include <omp.h>
 
@@ -32,9 +33,23 @@ using namespace std;
 
 bool sort_ascending = true;
 
+int cmp1(const void *a, const void *b)
+{
+    uint64_t x = (uint64_t)a, y = (uint64_t)b;
+
+    return (x>y)-(y>x);
+}
+
+int cmp2(const void *a, const void *b)
+{
+    uint64_t x = (uint64_t)a, y = (uint64_t)b;
+
+    return (y>x)-(x>y);
+}
+
 void initdata(uint64_t *region, uint64_t rlen) {
   fprintf(stderr, "initdata: %p, from %lu to %lu\n", region, (rlen), (rlen - rlen));
-#pragma omp parallel for
+//#pragma omp parallel for
   for(uint64_t i=0; i < rlen; ++i)
     region[i] = (uint64_t) (rlen - i);
 }
@@ -69,7 +84,7 @@ void validatedata(uint64_t *region, uint64_t rlen) {
   bool failed = false;
 
   if (sort_ascending == true) {
-#pragma omp parallel for private(failed)
+//#pragma omp parallel for private(failed)
     for(uint64_t i = 0; i < rlen; ++i) {
       if ( !failed && region[i] != (i+1) ) {
 #pragma omp critical
@@ -81,7 +96,7 @@ void validatedata(uint64_t *region, uint64_t rlen) {
     }
   }
   else {
-#pragma omp parallel for private(failed)
+//#pragma omp parallel for private(failed)
     for(uint64_t i = 0; i < rlen; ++i) {
       if ( !failed && region[i] != (rlen - i) ) {
 #pragma omp critical
@@ -171,11 +186,13 @@ int main(int argc, char **argv)
 
     if (sort_ascending == true) {
       printf("Sorting in Ascending Order\n");
-      __gnu_parallel::sort(arr, &arr[arraysize], std::less<uint64_t>(), __gnu_parallel::quicksort_tag());
+      //__gnu_parallel::sort(arr, &arr[arraysize], std::less<uint64_t>(), __gnu_parallel::quicksort_tag());
+      qsort(arr, arraysize, sizeof(uint64_t), cmp2);
     }
     else {
       printf("Sorting in Descending Order\n");
-      __gnu_parallel::sort(arr, &arr[arraysize], std::greater<uint64_t>(), __gnu_parallel::quicksort_tag());
+      //__gnu_parallel::sort(arr, &arr[arraysize], std::greater<uint64_t>(), __gnu_parallel::quicksort_tag());
+      qsort(arr, arraysize, sizeof(uint64_t), cmp1);
     }
 
     fprintf(stderr, "Sort took %f seconds\n", utility::elapsed_time_sec(start));
