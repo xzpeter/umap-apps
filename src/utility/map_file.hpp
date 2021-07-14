@@ -50,7 +50,12 @@ void* map_file(
   else
     o_opts |= O_RDONLY;
 
+retry:
   if ( ( fd = open(filename.c_str(), o_opts, S_IRUSR | S_IWUSR) ) == -1 ) {
+      if (o_opts & O_DIRECT) {
+          o_opts &= ~O_DIRECT;
+          goto retry;
+      }
     std::string estr = "Failed to open/create " + filename + ": ";
     perror(estr.c_str());
     return NULL;
